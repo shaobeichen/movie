@@ -1,8 +1,8 @@
 import env from './env'
+import { defineNuxtConfig } from 'nuxt/config'
+
 const { baseUrlProxy, baseUrl } = env
 
-
-// https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
     runtimeConfig: {
         public: {
@@ -29,8 +29,9 @@ export default defineNuxtConfig({
                 changeOrigin: true,
             },
         },
+        minify: true,
         // 是否进行gzip/br压缩
-        compressPublicAssets: import.meta.env.NO_COMPRESS !== 'true',
+        compressPublicAssets: true,
     },
     // 服务端代理
     routeRules: {

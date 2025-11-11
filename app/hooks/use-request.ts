@@ -28,6 +28,8 @@ export const useRequest = async <T>(url: string, options?: UseFetchOptions<T>) =
     if (!options.onResponse) options.onResponse = onResponse
     if (!options.onResponseError) options.onResponseError = onResponseError
 
+    if (!options.timeout) options.timeout = 10000
+
     if (import.meta.browser) {
         return await $fetch<T>(finalUrl, options as any)
     } else {
