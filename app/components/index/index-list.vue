@@ -2,23 +2,37 @@
   <div class="index-list" v-if="list.length">
     <div class="index-list__total">共 {{ total }} 条结果</div>
     <div class="index-list__item-container">
-      <div class="index-list__item" v-for="item in list" :key="item.id">
-        <NuxtLink class="index-list__item-link" v-if="item.id" :to="`/detail/${item.id}`">
+      <div class="index-list__item" v-for="(item, index) in list" :key="item.id">
+        <div class="index-list__item-link">
+          <div
+            class="index-list__item-add"
+            :title="!item.isStar ? '加入清单' : '取消清单'"
+            @click="onStar(item, index)"
+          >
+            <el-icon :size="30" color="#ff9900">
+              <Star v-if="!item.isStar" />
+              <StarFilled v-else />
+            </el-icon>
+          </div>
           <el-image
             class="index-list__item-poster"
             :src="staticUrl + item.poster_path"
             fit="cover"
+            :title="item.title"
+            @click="linkDetail(item.id)"
           />
-          <div class="index-list__item-content">
+          <div class="index-list__item-content" :title="item.title" @click="linkDetail(item.id)">
             <div class="index-list__item-content-title">
-              <div class="index-list__item-content-title-name">{{ item.title }}</div>
+              <div class="index-list__item-content-title-name">
+                {{ item.title }}
+              </div>
               <div class="index-list__item-content-title-vote">
                 {{ voteAverage(item.vote_average) }}
               </div>
             </div>
             <div class="index-list__item-content-overview">{{ item.overview }}</div>
           </div>
-        </NuxtLink>
+        </div>
       </div>
     </div>
     <div v-if="page < totalPages" class="index-list__load">
@@ -29,7 +43,9 @@
 </template>
 
 <script setup lang="ts">
-import type { SearchMovieResponseResults } from '~/api/movie'
+import type { SearchMovieResponseMergeResults } from '~/api/movie'
+import { useToast } from '~/hooks/use-toast'
+import { getTodoStorage, setTodoStorage } from '~/utils/storage-manager'
 
 const staticUrl = ref(useRuntimeConfig().public.staticUrl)
 
@@ -39,7 +55,7 @@ const {
   page = 0,
   totalPages = 0,
 } = defineProps<{
-  list?: SearchMovieResponseResults[]
+  list?: SearchMovieResponseMergeResults[]
   total?: number
   page?: number
   totalPages?: number
@@ -49,7 +65,7 @@ const emit = defineEmits(['loadMore'])
 
 const voteAverage = (vote?: number) => {
   if (!vote) {
-    return 'N/A'
+    return 0
   }
   return vote.toFixed(1)
 }
@@ -60,10 +76,40 @@ const onLoadMore = () => {
   }
   emit('loadMore')
 }
+
+const linkDetail = (id?: number) => {
+  if (!id) return
+  navigateTo(`/detail/${id}`)
+}
+
+const onStar = (item: SearchMovieResponseMergeResults, index: number) => {
+  const todo = getTodoStorage()
+  if (todo.some((i) => i.id === item.id)) {
+    todo.splice(
+      todo.findIndex((i) => i.id === item.id),
+      1,
+    )
+    setTodoStorage(todo)
+    if (list[index]) {
+      list[index].isStar = false
+    }
+    return
+  }
+  todo.unshift(item)
+  setTodoStorage(todo)
+  if (list[index]) {
+    list[index].isStar = true
+  }
+  useToast({
+    message: '加入清单成功',
+    type: 'success',
+  })
+}
 </script>
 
 <style lang="scss" scoped>
 .index-list {
+  padding: 0 0 100px;
   .index-list__total {
     font-size: 20px;
     font-weight: bold;
@@ -79,10 +125,18 @@ const onLoadMore = () => {
   .index-list__item {
     width: 186px;
     .index-list__item-link {
+      position: relative;
       color: #000;
       text-decoration: none;
       cursor: pointer;
       width: 100%;
+      .index-list__item-add {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 2;
+        drop-shadow: 0 0 10px #000;
+      }
       .index-list__item-poster {
         width: 100%;
         height: auto;

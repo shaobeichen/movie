@@ -1,7 +1,7 @@
 import env from './env'
 import { defineNuxtConfig } from 'nuxt/config'
 
-const { baseUrlProxy, baseUrl } = env
+const { baseUrl } = env
 
 export default defineNuxtConfig({
     runtimeConfig: {
@@ -22,20 +22,16 @@ export default defineNuxtConfig({
         scan: false,
     },
     nitro: {
-        // 客户端代理
         devProxy: {
-            [baseUrlProxy]: {
-                target: baseUrl + baseUrlProxy,
+            '/api': {
+                target: baseUrl,
                 changeOrigin: true,
-            },
+            }
         },
-        minify: true,
-        // 是否进行gzip/br压缩
         compressPublicAssets: true,
     },
-    // 服务端代理
     routeRules: {
-        [`${ baseUrlProxy }/**`]: { proxy: `${ baseUrl + baseUrlProxy }/**` },
+        [`${ '/api' }/**`]: { proxy: `${ baseUrl + '/api' }/**` },
     },
     devServer: {
         // 生成局域网链接

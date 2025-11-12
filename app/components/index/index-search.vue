@@ -1,5 +1,5 @@
 <template>
-  <el-input v-model="input" placeholder="请输入电影名称" @keyup.enter="onSearch">
+  <el-input v-model="input" size="large" placeholder="请输入电影名称" @keyup.enter="onSearch">
     <template #append>
       <el-button :icon="Search" @click="onSearch" />
     </template>
