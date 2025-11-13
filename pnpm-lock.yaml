@@ -17,6 +17,9 @@ importers:
       '@nuxt/test-utils':
         specifier: 3.20.1
         version: 3.20.1(magicast@0.5.1)(typescript@5.9.3)
+      dayjs:
+        specifier: ^1.11.19
+        version: 1.11.19
       element-plus:
         specifier: ^2.11.7
         version: 2.11.7(vue@3.5.24(typescript@5.9.3))

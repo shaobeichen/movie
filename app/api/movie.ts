@@ -89,10 +89,41 @@ export interface GetMovieDetailResponseSpokenLanguages {
     name?: string;
 };
 
+export interface GetMovieReviewsResponse {
+    id?: number;
+    page?: number;
+    results?: Array<GetMovieReviewsResponseResults>;
+    total_pages?: number;
+    total_results?: number;
+};
+
+export interface GetMovieReviewsResponseResults {
+    author?: string;
+    author_details?: GetMovieReviewsResponseAuthorDetails;
+    content?: string;
+    created_at?: Date;
+    id?: string;
+    updated_at?: Date;
+    url?: string;
+};
+
+export interface GetMovieReviewsResponseAuthorDetails {
+    name?: any;
+    username?: string;
+    avatar_path?: string;
+    rating?: any;
+};
+
+
+
 export const searchMovie = (query: SearchMovieQuery): Promise<SearchMovieResponse> => {
     return useGet(`/search/movie`, query)
 }
 
 export const getMovieDetail = (movieId: number): Promise<GetMovieDetailResponse> => {
     return useGet(`/movie/${ movieId }`)
+}
+
+export const getMovieReviews = (movieId: number): Promise<GetMovieReviewsResponse> => {
+    return useGet(`/movie/${ movieId }/reviews`)
 }

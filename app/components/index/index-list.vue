@@ -1,49 +1,80 @@
 <template>
   <div class="index-list" v-if="list.length">
-    <div class="index-list__total">共 {{ total }} 条结果</div>
+    <div class="index-list__header">
+      <div class="index-list__total">共 {{ total }} 条结果</div>
+      <el-select
+        v-model="value"
+        placeholder="选择排序"
+        style="width: 188px"
+        @change="onFilterChange"
+      >
+        <el-option
+          v-for="item in options"
+          :key="item.value"
+          :label="item.label"
+          :value="item.value"
+        />
+      </el-select>
+    </div>
+
     <div class="index-list__item-container">
-      <div class="index-list__item" v-for="(item, index) in list" :key="item.id">
-        <div class="index-list__item-link">
-          <div
-            class="index-list__item-add"
-            :title="!item.isStar ? '加入清单' : '取消清单'"
-            @click="onStar(item, index)"
-          >
-            <el-icon :size="30" color="#ff9900">
-              <Star v-if="!item.isStar" />
-              <StarFilled v-else />
-            </el-icon>
-          </div>
-          <el-image
-            class="index-list__item-poster"
-            :src="staticUrl + item.poster_path"
-            fit="cover"
-            :title="item.title"
-            @click="linkDetail(item.id)"
-          />
-          <div class="index-list__item-content" :title="item.title" @click="linkDetail(item.id)">
-            <div class="index-list__item-content-title">
-              <div class="index-list__item-content-title-name">
-                {{ item.title }}
+      <el-row :gutter="20" style="width: 100%; margin: 0 auto">
+        <el-col
+          :xs="12"
+          :sm="8"
+          :md="8"
+          :lg="8"
+          :xl="8"
+          v-for="(item, index) in list"
+          :key="item.id"
+        >
+          <div class="index-list__item">
+            <div class="index-list__item-link">
+              <div
+                class="index-list__item-add"
+                :title="!item.isStar ? '加入清单' : '取消清单'"
+                @click="onStar(item, index)"
+              >
+                <el-icon :size="30" color="#ff9900">
+                  <Star v-if="!item.isStar" />
+                  <StarFilled v-else />
+                </el-icon>
               </div>
-              <div class="index-list__item-content-title-vote">
-                {{ voteAverage(item.vote_average) }}
+              <el-image
+                class="index-list__item-poster"
+                :src="staticUrl + item.poster_path"
+                fit="cover"
+                :title="item.title"
+                @click="linkDetail(item.id)"
+              />
+              <div
+                class="index-list__item-content"
+                :title="item.title"
+                @click="linkDetail(item.id)"
+              >
+                <div class="index-list__item-content-title">
+                  <div class="index-list__item-content-title-name">
+                    {{ item.title }}
+                  </div>
+                  <div class="index-list__item-content-title-vote">
+                    {{ voteAverage(item.vote_average) }}
+                  </div>
+                </div>
+                <div class="index-list__item-content-overview">{{ item.overview }}</div>
               </div>
             </div>
-            <div class="index-list__item-content-overview">{{ item.overview }}</div>
           </div>
-        </div>
-      </div>
-    </div>
-    <div v-if="page < totalPages" class="index-list__load">
-      <el-button type="primary" @click="onLoadMore">加载更多</el-button>
+        </el-col>
+      </el-row>
     </div>
   </div>
   <el-empty v-else description="暂无结果" />
+  <div ref="loadMoreRef" class="index-list__load"></div>
 </template>
 
 <script setup lang="ts">
 import type { SearchMovieResponseMergeResults } from '~/api/movie'
+import { useIntersectionObserver } from '~/hooks/use-intersecion-observer'
 import { useToast } from '~/hooks/use-toast'
 import { getTodoStorage, setTodoStorage } from '~/utils/storage-manager'
 
@@ -63,7 +94,37 @@ const {
   isStarPage?: boolean
 }>()
 
-const emit = defineEmits(['loadMore'])
+const emit = defineEmits(['loadMore', 'filterChange'])
+
+const loadMoreRef = ref<HTMLDivElement>()
+const value = ref('timeDesc')
+const options = [
+  {
+    value: 'timeDesc',
+    label: '按添加时间降序',
+  },
+  {
+    value: 'timeAsc',
+    label: '按添加时间升序',
+  },
+]
+
+useIntersectionObserver({
+  element: loadMoreRef,
+  callback: () => onLoadMore(),
+})
+
+const onFilterChange = (val: string) => {
+  const list = getTodoStorage()
+  let _list = []
+  if (val === 'timeDesc') {
+    _list = list.sort((a, b) => (b?.id || 0) - (a?.id || 0))
+  } else {
+    _list = list.sort((a, b) => (a?.id || 0) - (b?.id || 0))
+  }
+  setTodoStorage(_list)
+  emit('filterChange')
+}
 
 const voteAverage = (vote?: number) => {
   if (!vote) {
@@ -120,15 +181,20 @@ const onStar = (item: SearchMovieResponseMergeResults, index: number) => {
     font-weight: bold;
     padding: 20px 0;
   }
+  .index-list__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
   .index-list__item-container {
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: flex-start;
-    gap: 20px;
   }
   .index-list__item {
-    width: 186px;
+    width: 100%;
+    margin-bottom: 20px;
     .index-list__item-link {
       position: relative;
       color: #000;
@@ -189,10 +255,10 @@ const onStar = (item: SearchMovieResponseMergeResults, index: number) => {
       }
     }
   }
-  .index-list__load {
-    width: 100%;
-    text-align: center;
-    padding: 50px 0 200px;
-  }
+}
+.index-list__load {
+  width: 100%;
+  text-align: center;
+  padding: 10px 0;
 }
 </style>

@@ -1,5 +1,15 @@
 <template>
-  <index-list :list="list" :total="total" :page="page" :total-pages="totalPages" isStarPage />
+  <div class="star-lottery">
+    <star-lottery :movies="list" />
+  </div>
+  <index-list
+    :list="list"
+    :total="total"
+    :page="page"
+    :total-pages="totalPages"
+    isStarPage
+    @filterChange="onFilterChange"
+  />
 </template>
 
 <script setup lang="ts">
@@ -16,4 +26,9 @@ onMounted(() => {
   list.value = starList
   total.value = starList.length
 })
+
+const onFilterChange = () => {
+  const starList = getTodoStorage()
+  list.value = starList
+}
 </script>
