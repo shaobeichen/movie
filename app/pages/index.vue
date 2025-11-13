@@ -26,13 +26,10 @@ const useSearch = () => {
   const page = ref(1)
   const totalPages = ref(1)
 
-  const query = ref<{ query: string; [key: string]: string | number }>({
+  const params = computed<{ query: string; page: number; [key: string]: string | number }>(() => ({
     query: input.value,
-  })
-
-  watch(input, (newVal) => {
-    query.value.query = newVal
-  })
+    page: page.value,
+  }))
 
   const handleStar = (item: SearchMovieResponseMergeResults) => {
     const todo = getTodoStorage()
@@ -44,11 +41,15 @@ const useSearch = () => {
 
   const { openLoading, closeLoading } = useLoading()
 
-  const onSearch = async () => {
+  const getData = async (isUpdate = false) => {
     openLoading()
 
-    const data = await useSafeCall(() => searchMovie(query.value), null)
-
+    if (isUpdate) {
+      page.value = page.value + 1
+    } else {
+      page.value = 1
+    }
+    const data = await useSafeCall(() => searchMovie(params.value), null)
     if (!data) {
       useToast({
         message: '请求失败，请稍后再试',
@@ -58,7 +59,11 @@ const useSearch = () => {
       return
     }
 
-    list.value = data?.results?.map(handleStar) || []
+    if (isUpdate) {
+      list.value = [...list.value, ...(data?.results?.map(handleStar) || [])]
+    } else {
+      list.value = [...(data?.results?.map(handleStar) || [])]
+    }
     total.value = data?.total_results || 0
     page.value = data?.page || 1
     totalPages.value = data?.total_pages || 1
@@ -66,24 +71,13 @@ const useSearch = () => {
     closeLoading()
   }
 
-  const onLoadMore = async () => {
+  const onSearch = () => getData()
+
+  const onLoadMore = () => {
     if (page.value >= totalPages.value) {
       return
     }
-    openLoading()
-    const data = await useSafeCall(
-      () =>
-        searchMovie({
-          ...query.value,
-          page: page.value + 1,
-        }),
-      {},
-    )
-    list.value = [...list.value, ...(data?.results || [])]
-    total.value = data?.total_results || 0
-    page.value = data?.page || 1
-    totalPages.value = data?.total_pages || 1
-    closeLoading()
+    getData(true)
   }
 
   return {

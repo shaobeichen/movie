@@ -54,11 +54,13 @@ const {
   total = 0,
   page = 0,
   totalPages = 0,
+  isStarPage = false,
 } = defineProps<{
   list?: SearchMovieResponseMergeResults[]
   total?: number
   page?: number
   totalPages?: number
+  isStarPage?: boolean
 }>()
 
 const emit = defineEmits(['loadMore'])
@@ -85,21 +87,24 @@ const linkDetail = (id?: number) => {
 const onStar = (item: SearchMovieResponseMergeResults, index: number) => {
   const todo = getTodoStorage()
   if (todo.some((i) => i.id === item.id)) {
-    todo.splice(
-      todo.findIndex((i) => i.id === item.id),
-      1,
-    )
-    setTodoStorage(todo)
-    if (list[index]) {
-      list[index].isStar = false
+    todo.splice(index, 1)
+    if (isStarPage) {
+      list.splice(index, 1)
+    } else {
+      if (list[index]) {
+        list[index].isStar = false
+      }
+      item.isStar = false
     }
+    setTodoStorage(todo)
     return
   }
-  todo.unshift(item)
-  setTodoStorage(todo)
   if (list[index]) {
     list[index].isStar = true
   }
+  item.isStar = true
+  todo.unshift(item)
+  setTodoStorage(todo)
   useToast({
     message: '加入清单成功',
     type: 'success',

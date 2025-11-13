@@ -1,9 +1,20 @@
 <template>
-  <el-input v-model="input" size="large" placeholder="请输入电影名称" @keyup.enter="onSearch">
-    <template #append>
-      <el-button :icon="Search" @click="onSearch" />
-    </template>
-  </el-input>
+  <div class="index-search">
+    <el-input v-model="input" size="large" placeholder="请输入电影名称" @keyup.enter="onSearch">
+      <template #append>
+        <el-button :icon="Search" @click="onSearch" />
+      </template>
+    </el-input>
+    <el-icon
+      :size="30"
+      color="#ff9900"
+      title="待看清单"
+      class="index-search__icon"
+      @click="linkStar"
+    >
+      <CollectionTag />
+    </el-icon>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -24,4 +35,19 @@ const onSearch = () => {
   }
   emit('search', input.value)
 }
+
+const linkStar = () => {
+  navigateTo('/star')
+}
 </script>
+
+<style lang="scss" scoped>
+.index-search {
+  display: flex;
+  align-items: center;
+  .index-search__icon {
+    margin-left: 20px;
+    cursor: pointer;
+  }
+}
+</style>

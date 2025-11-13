@@ -18,7 +18,7 @@ export const useRequest = async <T>(url: string, options?: UseFetchOptions<T>) =
     const _url = url
     const _baseUrl = baseUrl
 
-    const isNeedJoin = import.meta.server && _url.startsWith('/')
+    const isNeedJoin = _url.startsWith('/')
     const finalUrl = isNeedJoin ? _baseUrl + _url : _url
 
     if (!options) options = {}
