@@ -4,12 +4,11 @@
     "private": true,
     "scripts": {
         "dev": "nuxt dev -o",
-        "build": "nuxt build && npm run created",
+        "build": "nuxt build",
         "start": "pm2 start ecosystem.config.cjs",
         "generate": "nuxt generate",
         "preview": "nuxt preview",
-        "postinstall": "nuxt prepare",
-        "created": "mkdir .output/server/node_modules/@popperjs && mv .output/server/node_modules/@sxzz/popperjs-es .output/server/node_modules/@popperjs/core"
+        "postinstall": "nuxt prepare"
     },
     "engines": {
         "node": ">=22",
