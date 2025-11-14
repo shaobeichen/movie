@@ -84,17 +84,15 @@ const gridItems = computed(() => {
   // 如果影片不够则随机可填充重复的
   // 先搞个随机数数组，9个不可重复，如果影片不够9个，随机填充重复的
   // 举例，影片只有6个，索引数组里面先包含0 1 2 3 4 5，然后还有3个随机数，可能是0 1 2 3 4 5中的任意一个，但不能是0 0 1，不能再次重复了
-  const availableIndexes = Array.from({ length: movies.length }, (_, i) => i)
-  const originAvailableIndexes = [...availableIndexes]
+  const indexes = Array.from({ length: movies.length }, (_, i) => i)
+  let _indexes = [...indexes]
   const randomIndexes: number[] = []
   for (let i = 0; i < 9; i++) {
-    const indexes = availableIndexes.length ? availableIndexes : originAvailableIndexes
-    const randomIndex = Math.floor(Math.random() * indexes.length)
-    const item = indexes[randomIndex]
+    if (!_indexes.length) _indexes = [...indexes]
+    const randomIndex = Math.floor(Math.random() * _indexes.length)
+    const item = _indexes[randomIndex]
     randomIndexes.push(item!)
-    availableIndexes.length
-      ? availableIndexes.splice(randomIndex, 1)
-      : originAvailableIndexes.splice(randomIndex, 1)
+    _indexes.splice(randomIndex, 1)
   }
   randomIndexes.forEach((index) => {
     items.push(movies[index] || null)
