@@ -1,21 +1,28 @@
 <template>
   <div class="index-list" v-if="list.length">
-    <div class="index-list__header">
-      <div class="index-list__total">共 {{ total }} 条结果</div>
-      <el-select
-        v-model="value"
-        placeholder="选择排序"
-        style="width: 188px"
-        @change="onFilterChange"
-      >
-        <el-option
-          v-for="item in options"
-          :key="item.value"
-          :label="item.label"
-          :value="item.value"
-        />
-      </el-select>
-    </div>
+    <el-row class="index-list__header" style="width: 100%; margin: 0 auto">
+      <el-col :xs="8" :sm="8" :md="8" :lg="8" :xl="8">
+        <div class="index-list__total">共 {{ total }} 条结果</div>
+      </el-col>
+      <el-col :xs="8" :sm="8" :md="8" :lg="8" :xl="8">
+        <star-dialog v-if="isStarPage" :list="list" />
+      </el-col>
+      <el-col :xs="8" :sm="8" :md="8" :lg="8" :xl="8">
+        <el-select
+          v-if="isStarPage"
+          v-model="value"
+          placeholder="选择排序"
+          @change="onFilterChange"
+        >
+          <el-option
+            v-for="item in options"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-col>
+    </el-row>
 
     <div class="index-list__item-container">
       <el-row :gutter="20" style="width: 100%; margin: 0 auto">
@@ -73,6 +80,7 @@
 </template>
 
 <script setup lang="ts">
+import dayjs from 'dayjs'
 import type { SearchMovieResponseMergeResults } from '~/api/movie'
 import { useIntersectionObserver } from '~/hooks/use-intersecion-observer'
 import { useToast } from '~/hooks/use-toast'
@@ -101,11 +109,11 @@ const value = ref('timeDesc')
 const options = [
   {
     value: 'timeDesc',
-    label: '按添加时间降序',
+    label: '按发布时间降序',
   },
   {
     value: 'timeAsc',
-    label: '按添加时间升序',
+    label: '按发布时间升序',
   },
 ]
 
@@ -117,10 +125,10 @@ useIntersectionObserver({
 const onFilterChange = (val: string) => {
   const list = getTodoStorage()
   let _list = []
-  if (val === 'timeDesc') {
-    _list = list.sort((a, b) => (b?.id || 0) - (a?.id || 0))
+  if (val === 'timeAsc') {
+    _list = list.sort((a, b) => (+dayjs(b?.release_date) || 0) - (+dayjs(a?.release_date) || 0))
   } else {
-    _list = list.sort((a, b) => (a?.id || 0) - (b?.id || 0))
+    _list = list.sort((a, b) => (+dayjs(a?.release_date) || 0) - (+dayjs(b?.release_date) || 0))
   }
   setTodoStorage(_list)
   emit('filterChange')
@@ -179,12 +187,12 @@ const onStar = (item: SearchMovieResponseMergeResults, index: number) => {
   .index-list__total {
     font-size: 20px;
     font-weight: bold;
-    padding: 20px 0;
   }
   .index-list__header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 20px 0;
   }
   .index-list__item-container {
     display: flex;

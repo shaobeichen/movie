@@ -1,7 +1,4 @@
 <template>
-  <div class="star-lottery">
-    <star-lottery :movies="list" />
-  </div>
   <index-list
     :list="list"
     :total="total"

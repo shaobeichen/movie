@@ -133,7 +133,7 @@ const getReviews = async () => {
   closeLoading()
 }
 
-init()
+await init()
 
 onMounted(() => {
   getReviews()

@@ -1,7 +1,6 @@
 <template>
   <div class="star-lottery">
     <div class="star-lottery__header">
-      <h2>影片九宫格抽奖</h2>
       <div v-if="selectedMovie" class="star-lottery__selected-movie">
         <el-image
           :src="staticUrl + (selectedMovie.poster_path || '')"
@@ -9,7 +8,7 @@
           class="star-lottery__selected-poster"
         />
         <div class="star-lottery__selected-info">
-          <h3>{{ selectedMovie.title || '未知影片' }}</h3>
+          <div class="star-lottery__selected-title">{{ selectedMovie.title || '未知影片' }}</div>
           <div class="star-lottery__selected-rating">
             评分: {{ voteAverage(selectedMovie.vote_average || 0) }}
           </div>
@@ -46,7 +45,7 @@
         :disabled="isSpinning || availableIndexes.length === 0"
         @click="startLottery"
       >
-        {{ isSpinning ? '抽奖中...' : '开始抽奖' }}
+        {{ isSpinning ? '抽取中...' : '开始抽取' }}
       </el-button>
       <el-button
         size="large"
@@ -67,7 +66,6 @@
 import { ref, computed } from 'vue'
 import type { SearchMovieResponseMergeResults } from '~/api/movie'
 
-// 修复useRuntimeConfig的使用方式
 const runtimeConfig = useRuntimeConfig()
 const staticUrl = ref(runtimeConfig.public.staticUrl)
 
@@ -82,20 +80,31 @@ const selectedMovie = ref<SearchMovieResponseMergeResults | null>(null)
 // 九宫格数据 - 从左到右，从上到下
 const gridItems = computed(() => {
   const items: (SearchMovieResponseMergeResults | null)[] = []
-  // 填充九宫格数据，如果影片不够则循环使用
+  // 填充九宫格数据，每次都是随机一部影片，不可重复
+  // 如果影片不够则随机可填充重复的
+  // 先搞个随机数数组，9个不可重复，如果影片不够9个，随机填充重复的
+  // 举例，影片只有6个，索引数组里面先包含0 1 2 3 4 5，然后还有3个随机数，可能是0 1 2 3 4 5中的任意一个，但不能是0 0 1，不能再次重复了
+  const availableIndexes = Array.from({ length: movies.length }, (_, i) => i)
+  const originAvailableIndexes = [...availableIndexes]
+  const randomIndexes: number[] = []
   for (let i = 0; i < 9; i++) {
-    const movieIndex = i % movies.length
-    const movie = movies[movieIndex]
-    items.push(movie || null)
+    const indexes = availableIndexes.length ? availableIndexes : originAvailableIndexes
+    const randomIndex = Math.floor(Math.random() * indexes.length)
+    const item = indexes[randomIndex]
+    randomIndexes.push(item!)
+    availableIndexes.length
+      ? availableIndexes.splice(randomIndex, 1)
+      : originAvailableIndexes.splice(randomIndex, 1)
   }
+  randomIndexes.forEach((index) => {
+    items.push(movies[index] || null)
+  })
   return items
 })
 
 // 找出所有有影片的索引
 const availableIndexes = computed(() => {
-  return gridItems.value
-    .map((item, index) => (item ? index : -1))
-    .filter((index): index is number => index !== -1)
+  return gridItems.value.map((item, index) => (item ? index : -1)).filter((index) => index !== -1)
 })
 
 // 格式化评分
@@ -104,7 +113,7 @@ const voteAverage = (vote?: number) => {
   return vote.toFixed(1)
 }
 
-// 开始抽奖
+// 开始抽取
 const startLottery = () => {
   if (isSpinning.value || availableIndexes.value.length === 0) return
 
@@ -116,92 +125,31 @@ const startLottery = () => {
   const targetIndex = availableIndexes.value[randomIndex] || 0
 
   // 设置动画参数
-  const duration = 3000 // 总时长 ms
-  const quickSpinRounds = 3 // 快速旋转的圈数
-  const slowDownSteps = 18 // 减速到停止的步数
-
-  // 计算总步数
-  const quickSpinSteps = quickSpinRounds * 9
-  const totalSteps = quickSpinSteps + slowDownSteps
+  const duration = 5000 // 总时长 ms
+  const quickSpinRounds = 2 // 快速旋转的圈数
+  const quickSpinSteps = quickSpinRounds * 9 // 计算总步数
+  const totalSteps = quickSpinSteps + targetIndex
   let currentStep = 0
   let baseDelay = (duration / totalSteps) * 0.8 // 基础延迟时间
-
-  // 计算快速旋转结束时的位置
-  const quickSpinEndIndex = quickSpinSteps % 9
 
   // 构建完整的动画路径
   // 快速旋转阶段路径 - 简单的从0到8循环
   const quickSpinPath: number[] = []
-  for (let i = 0; i < quickSpinSteps; i++) {
+  for (let i = 0; i < totalSteps; i++) {
     quickSpinPath.push(i % 9)
-  }
-
-  // 减速阶段路径 - 确保按顺序自然旋转到目标位置
-  const slowDownPath: number[] = []
-
-  // 计算从快速旋转结束位置到目标位置需要经过的完整路径
-  // 确保路径足够长，并且最后一个位置是目标位置
-  let currentPos = quickSpinEndIndex
-  let positionsAdded = 0
-
-  // 构建减速路径，确保每个位置都按顺序经过
-  while (positionsAdded < slowDownSteps) {
-    // 移动到下一个位置（顺时针）
-    currentPos = (currentPos + 1) % 9
-    slowDownPath.push(currentPos)
-    positionsAdded++
-
-    // 如果已经到达目标位置但还没填满减速步数，继续旋转一圈
-    if (currentPos === targetIndex && positionsAdded < slowDownSteps) {
-      // 再转一圈，然后在最后一个位置再设为目标位置
-      const remainingSteps = slowDownSteps - positionsAdded
-      for (let i = 0; i < remainingSteps - 1; i++) {
-        currentPos = (currentPos + 1) % 9
-        slowDownPath.push(currentPos)
-        positionsAdded++
-      }
-      // 最后一步设为目标位置
-      slowDownPath.push(targetIndex)
-      positionsAdded++
-    }
-  }
-
-  // 确保最后一步确实是目标位置
-  if (slowDownPath.length > 0) {
-    slowDownPath[slowDownPath.length - 1] = targetIndex
   }
 
   // 执行动画
   const animate = () => {
     if (currentStep < totalSteps) {
       let gridIndex: number = 0
-
-      // 快速旋转阶段 - 使用快速旋转路径
-      if (currentStep < quickSpinSteps) {
-        gridIndex = quickSpinPath[currentStep] || 0
-      } else {
-        // 减速阶段 - 使用减速路径
-        const slowStepIndex = currentStep - quickSpinSteps
-        gridIndex = slowDownPath[slowStepIndex] || 0
-      }
-
+      gridIndex = quickSpinPath[currentStep] || 0
       activeIndex.value = gridIndex
 
       // 增加当前步数
       currentStep++
 
-      // 计算下一步的延迟时间（逐渐减慢）
-      let nextDelay = baseDelay
-
-      // 减速阶段开始减慢速度
-      if (currentStep > quickSpinSteps) {
-        const slowProgress = (currentStep - quickSpinSteps) / slowDownSteps
-        // 逐渐增加延迟，最后一步延迟最大
-        nextDelay = baseDelay * (1 + slowProgress * 4)
-      }
-
-      // 设置下一步动画
-      setTimeout(animate, nextDelay)
+      setTimeout(animate, baseDelay)
     } else {
       // 确保最终停在目标位置
       activeIndex.value = targetIndex
@@ -219,7 +167,7 @@ const startLottery = () => {
   animate()
 }
 
-// 重置抽奖
+// 重置抽取
 const resetLottery = () => {
   activeIndex.value = -1
   selectedMovie.value = null
@@ -230,19 +178,8 @@ const resetLottery = () => {
 .star-lottery {
   max-width: 600px;
   margin: 0 auto;
-  padding: 20px;
 
-  &__header {
-    text-align: center;
-    margin-bottom: 30px;
-
-    h2 {
-      font-size: 28px;
-      margin-bottom: 20px;
-    }
-  }
-
-  &__selected-movie {
+  .star-lottery__selected-movie {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -250,65 +187,68 @@ const resetLottery = () => {
     padding: 20px;
     background: #f5f7fa;
     border-radius: 12px;
-    margin-top: 20px;
+    margin: 20px 0;
   }
 
-  &__selected-poster {
-    width: 80px;
-    height: 120px;
+  .star-lottery__selected-poster {
+    width: 50%;
     border-radius: 8px;
+    aspect-ratio: 1 / 1.7;
+    max-width: 100px;
+    min-width: 50px;
   }
 
-  &__selected-info {
+  .star-lottery__selected-info {
     text-align: left;
 
-    h3 {
+    .star-lottery__selected-title {
       margin: 0 0 10px 0;
       font-size: 20px;
+      @media screen and (max-width: 500px) {
+        font-size: 14px;
+      }
     }
 
-    &-rating {
+    .star-lottery__selected-info-rating {
       color: #ff9900;
       font-weight: bold;
     }
   }
 
-  &__grid-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    gap: 10px;
+  .star-lottery__grid-container {
+    display: flex;
     margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
   }
 
-  &__grid-item {
-    aspect-ratio: 1;
-    border: 2px solid #e4e7ed;
+  .star-lottery__grid-item {
+    border: 1px solid #e4e7ed;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 10px;
     position: relative;
     transition: all 0.2s ease;
     background: white;
-
-    &--active {
+    width: 30%;
+    aspect-ratio: 1;
+    &.star-lottery__grid-item--active {
       border-color: #ff9900;
       background: #fff7e6;
       box-shadow: 0 0 20px rgba(255, 153, 0, 0.3);
-      transform: scale(1.05);
     }
   }
 
-  &__grid-poster {
-    width: 80%;
-    height: 70%;
+  .star-lottery__grid-poster {
+    width: 50%;
+    height: 80%;
     border-radius: 4px;
   }
 
-  &__grid-title {
+  .star-lottery__grid-title {
     width: 100%;
     text-align: center;
     font-size: 12px;
@@ -318,19 +258,19 @@ const resetLottery = () => {
     text-overflow: ellipsis;
   }
 
-  &__grid-empty {
+  .star-lottery__grid-empty {
     color: #909399;
     font-size: 14px;
   }
 
-  &__controls {
+  .star-lottery__controls {
     display: flex;
     justify-content: center;
     gap: 15px;
     margin-top: 20px;
   }
 
-  &__empty {
+  .star-lottery__empty {
     margin-top: 50px;
   }
 }
