@@ -6,14 +6,15 @@
       :list="list"
       :total="total"
       :page="page"
-      :totalPages="totalPages"
-      @loadMore="onLoadMore"
+      :total-pages="totalPages"
+      @load-more="onLoadMore"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { searchMovie, type SearchMovieResponseMergeResults } from '~/api/movie'
+import { searchMovieModelMapper } from '~/domain/search-movie-mapper'
 import { useLoading } from '~/hooks/use-loading'
 import { useSafeCall } from '~/hooks/use-safecall'
 import { useToast } from '~/hooks/use-toast'
@@ -59,10 +60,12 @@ const useSearch = () => {
       return
     }
 
+    let _result = data?.results?.map(handleStar) || []
+    _result = _result.map(searchMovieModelMapper)
     if (isUpdate) {
-      list.value = [...list.value, ...(data?.results?.map(handleStar) || [])]
+      list.value = [...list.value, ..._result]
     } else {
-      list.value = [...(data?.results?.map(handleStar) || [])]
+      list.value = [..._result]
     }
     total.value = data?.total_results || 0
     page.value = data?.page || 1

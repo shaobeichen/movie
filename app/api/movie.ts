@@ -41,7 +41,7 @@ export interface SearchMovieResponse {
 export interface GetMovieDetailResponse {
     adult?: boolean;
     backdrop_path?: string;
-    belongs_to_collection?: any;
+    belongs_to_collection?: string;
     budget?: number;
     genres?: Array<GetMovieDetailResponseGenres>;
     homepage?: string;
@@ -108,13 +108,11 @@ export interface GetMovieReviewsResponseResults {
 };
 
 export interface GetMovieReviewsResponseAuthorDetails {
-    name?: any;
+    name?: string;
     username?: string;
     avatar_path?: string;
-    rating?: any;
+    rating?: number;
 };
-
-
 
 export const searchMovie = (query: SearchMovieQuery): Promise<SearchMovieResponse> => {
     return useGet(`/search/movie`, query)
